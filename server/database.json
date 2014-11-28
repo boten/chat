@@ -1,0 +1,9 @@
+{
+    "dev": {
+    "host": "localhost",
+    "user": "root",
+    "database": "chat",
+    "driver": "mysql",
+    "multipleStatements": true
+  }
+}
