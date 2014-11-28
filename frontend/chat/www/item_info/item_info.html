@@ -1,20 +1,5 @@
-<ion-nav-bar class="nav-title-slide-ios7 bar-positive">
-    <ion-nav-back-button  class="button-icon" ng-click="goBack()">
-        <i class="ion-arrow-left-c"></i> Back
-    </ion-nav-back-button>
-    <ion-nav-buttons side="right">
-        <button class="button button-positive" ng-click="bingChannel(channelName)"
-                ng-disabled="disableBtn">
-            <i class="icon ion-android-add"></i>
-        </button>
-        <button ng-show="auth().user" ng-click="logout()" class="button button-royal">Log out</button>
-    </ion-nav-buttons>
-
-</ion-nav-bar>
-
-
-<ion-view title="watching channnel {{channelName}}" hide-back-button="false">
-
+<ion-view title="watching channnel {{channelName}}">
+<div>dsfdsfdsfsd</div>
     <ion-pane class="messaging-view">
 
         <ion-content class="content-stable" ng-style="{ bottom: data.keyboardHeight + 'px' }">

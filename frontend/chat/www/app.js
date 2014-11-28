@@ -3,59 +3,67 @@
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
-angular.module('tvchat', ['ionic','tvchat.services','firebase'])
+angular.module('tvchat', ['ionic','tvchat.services','openfb'])
     .config(function($stateProvider,$urlRouterProvider) {
-        $urlRouterProvider.otherwise('/');
+        $urlRouterProvider.otherwise('/login');
         $stateProvider
             .state('login',{
-                url:'/',
+                url:'/login',
                 templateUrl:'login/login.html',
                 controller: 'LoginController'
 
             })
-            .state('index', {
+            .state('tab', {
+                url: "/tab",
+                abstract: true,
+                templateUrl: "tabs.html",
+                controller : 'TabsController as tab'
+            })
+            .state('tab.index', {
                 url: '/index',
-                templateUrl: 'main_list/main_list.html',
-                resolve:{
-                    channel: ['httpService',function(httpService){
-                            return httpService.getChannelsList();
-                        }]
-                    },
-                controller: 'mainListController'
-                //controllerAs: 'mainList'
-            })
-            .state('info',{
-                url: '/:name',
-                templateUrl: 'item_info/item_info.html',
-                resolve:{
-                    msg: ['httpService','$stateParams',function(httpService,stateParams){
-                        //done: fix how to get channel name -> state.params.name = undefined?
-                        //fixes: use stateParams that is already exist with resolve :)
-                        return httpService.getChannelMsg(stateParams.name);
-                    }]
-                },
-                controller: 'itemInfoController',
-                controllerAs : 'item'
+                views: {
+                    'tab-index': {
+                        templateUrl: 'main_list/main_list.html',
+                        resolve: {
+                            channel: ['httpService', function (httpService) {
+                                return httpService.getChannelsList();
+                            }]
+                        },
+                        controller: 'mainListController'
+                    }
+                }
 
             })
+            .state('tab.info',{
+                url: '/channel/:name',
+                views: {
+                    'tab-index': {
+                        templateUrl: 'item_info/item_info.html',
+                        resolve: {
+                            msg: ['httpService', '$stateParams', function (httpService, stateParams) {
+                                //done: fix how to get channel name -> state.params.name = undefined?
+                                //fixes: use stateParams that is already exist with resolve :)
+                                return httpService.getChannelMsg(stateParams.name);
+                            }]
+                        },
+                        controller: 'itemInfoController',
+                    }
+                }
+
+           })
+
+
     })
-    .value('FIREBASE_REF','https://tv-chat.firebaseio.com/')
     .value('userSession',{})
-    .controller('wrapperController', ['$scope','userSession','$ionicNavBarDelegate','$stateParams','$timeout','$ionicLoading', function(scope,userSession,ionicNavBarDelegate,stateParams,timeout,$ionicLoading) {
+    .controller('wrapperController', ['$scope','$state','$ionicNavBarDelegate','$stateParams','$timeout','$ionicLoading','OpenFB', function(scope,$state,ionicNavBarDelegate,stateParams,timeout,$ionicLoading,OpenFB) {
 
-
-        scope.user= function(){
-             return userSession.user;
-        }
-
-        scope.auth =function(){
-            return userSession.auth;
-        }
 
 
         scope.logout=function(){
-            userSession.auth.$logout();
-        }
+            OpenFB.logout();
+            $state.go('login');
+        };
+
 
 
         scope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
@@ -72,22 +80,11 @@ angular.module('tvchat', ['ionic','tvchat.services','firebase'])
             $ionicLoading.hide();
         });
 
-        scope.goBack = function() {
-           // console.log('stateParams');
-          //  console.log(stateParams);
-            socket.emit("joinLobby",{oldRoom:stateParams.name});
-            ionicNavBarDelegate.back();
-        };
-
-        socket.on("breakIsOver", function (channel) {
-            console.log('break over '+channel);
-            alert('breaks over on '+channel);
-        });
 
         scope.disableBtn = false;
 
         scope.bingChannel = function(channelName){
-            socket.emit("addToCounter",{channelName: channelName});
+            //socket.emit("addToCounter",{channelName: channelName});
             scope.disableBtn = true;
             timeout(function(){
                 scope.disableBtn = false;
@@ -99,7 +96,10 @@ angular.module('tvchat', ['ionic','tvchat.services','firebase'])
     .constant('socketConstant',{
         socket: io.connect('http://quiet-ridge-6377.herokuapp.com:80')
     })
-    .run(function($ionicPlatform,socketConstant,$state,$rootScope,userSession) {
+    .run(function($ionicPlatform,socketConstant,$state,$rootScope,OpenFB) {
+
+        OpenFB.init('664205657027056'); //fb unique id
+
       $ionicPlatform.ready(function() {
         // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
         // for form inputs)
@@ -111,22 +111,19 @@ angular.module('tvchat', ['ionic','tvchat.services','firebase'])
           StatusBar.styleDefault();
         }
 
-
-          $rootScope.$on('$firebaseSimpleLogin:login', function(event, user) {
-              userSession.user=user;
-               console.log('logged in');
-              $state.go('index');
-          });
-
-          $rootScope.$on('$firebaseSimpleLogin:error', function(event, error) {
-              console.log('Error logging user in: ', error);
-          });
-
-          $rootScope.$on('$firebaseSimpleLogin:logout', function(event) {
-              angular.copy({}, userSession.auth.user);
-              $state.go('login');
-          });
       });
+
+        $rootScope.$on('$stateChangeStart', function(event, toState) {
+            if (toState.name !== "app.login" && toState.name !== "app.logout" && !window.sessionStorage['fbtoken']) {
+                $state.go('login');
+                event.preventDefault();
+            }
+        });
+
+        $rootScope.$on('OAuthException', function() {
+            $state.go('login');
+        });
+
         //making socket available all over the app:
       socket = socketConstant.socket;
 

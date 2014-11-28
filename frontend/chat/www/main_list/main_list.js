@@ -6,6 +6,8 @@
     function mainListController(scope,channel,state,dataService){
 
       // 'channel' is coming from the resolve ui-router
+
+
         scope.channels = channel.data;
 
         //scope.listenStatus = {status : false};

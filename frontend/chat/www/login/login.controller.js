@@ -2,28 +2,28 @@
  * Created by nadav on 10/24/14.
  */
 
-angular.module('com.htmlxprs.socialAuth.controllers',[]).controller('LoginController',['$scope','FIREBASE_REF','$firebaseSimpleLogin','userSession',function($scope,FIREBASE_REF,$firebaseSimpleLogin,userSession){
-
-    userSession.auth=$firebaseSimpleLogin(new Firebase(FIREBASE_REF));
-
-    $scope.login=function(provider){
-        userSession.auth.$login(provider);
-    }
-
-}]);
-
 
 (function(){
-    function LoginController($scope,FIREBASE_REF,$firebaseSimpleLogin,userSession){
+    function LoginController($scope,OpenFB,$state){
 
-        userSession.auth=$firebaseSimpleLogin(new Firebase(FIREBASE_REF));
 
-        $scope.login=function(provider){
-            userSession.auth.$login(provider);
+        $scope.login=function(){
+            OpenFB.login('email,read_stream,publish_stream').then(
+                function (data) {
+                    $state.go('tab.index');
+
+                },
+                function () {
+                    alert('OpenFB login failed');
+                });
+        }
+
+        $scope.bob = function(){
+            $state.go('tab.index', {}, {reload: true});
         }
 
     }
 
     angular.module('tvchat')
-        .controller('LoginController',['$scope','FIREBASE_REF','$firebaseSimpleLogin','userSession',LoginController]);
+        .controller('LoginController',['$scope','OpenFB','$state',LoginController]);
 }());
